@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.lcwd.user.service.entities.User;
 import com.lcwd.user.service.services.UserService;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+
 @RestController
 @RequestMapping("/users")
 public class UserController {
@@ -29,9 +32,19 @@ public class UserController {
 	}
 	
 	@GetMapping("/{userId}")
+//	@CircuitBreaker(name = "ratingHotelBreaker", fallbackMethod = "ratingHotelFallback")
+	@RateLimiter(name = "userRateLimiter", fallbackMethod = "ratingHotelFallback")
 	public ResponseEntity<User> getSingleUser(@PathVariable String userId){
 		User user = userService.getUser(userId);
 		return ResponseEntity.ok(user);
+	}
+	
+	public ResponseEntity<User> ratingHotelFallback(String userId, Exception ex){
+		User user = new User();
+		user.setEmail("bk@gmail.com");
+		user.setName("bk");
+		user.setAbout("Dummy account");
+		return ResponseEntity.status(HttpStatus.CREATED).body(user);
 	}
 	
 	@GetMapping
